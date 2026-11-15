@@ -42,6 +42,8 @@ package
       
       private var lastConfig:String;
       
+      private var QuestTrackerProvider:*;
+      
       private var EncounterHealthMeterArray:*;
       
       private var encounterObjectives:Array = [];
@@ -70,6 +72,7 @@ package
          {
             if(getQualifiedClassName(this.topLevel) == TITLE_HUDMENU)
             {
+               this.QuestTrackerProvider = BSUIDataManager.GetDataFromClient("QuestTrackerProvider");
                BSUIDataManager.Subscribe("QuestTrackerProvider",this.onQuestTrackerUpdate);
                this.EncounterHealthMeterArray = BSUIDataManager.GetDataFromClient("EncounterHealthMeterArray");
                this.EncounterHealthMeterArray.addEventListener(Event.CHANGE,this.onEncounterHealthMeterUpdate,false,int.MAX_VALUE);
@@ -122,6 +125,7 @@ package
                   {
                      jsonData = new JSONDecoder(loader.data,false).getValue();
                      MoreBossEncountersConfig.init(jsonData);
+                     onQuestTrackerUpdate(QuestTrackerProvider);
                      lastConfig = loader.data;
                   }
                }
@@ -161,14 +165,14 @@ package
          return MoreBossEncountersConfig.get();
       }
       
-      private function onQuestTrackerUpdate(event:FromClientDataEvent) : void
+      private function onQuestTrackerUpdate(event:*) : void
       {
-         var progressObjectives:Array;
          var hasEncounterQuest:Boolean;
          var quest:*;
+         var progressObjectives:Array = [];
          try
          {
-            if(config == null)
+            if(!config)
             {
                return;
             }
@@ -222,7 +226,7 @@ package
          var pctStr:String;
          try
          {
-            if(config == null)
+            if(!config)
             {
                return;
             }
@@ -275,11 +279,18 @@ package
             {
                for each(meter in event.data.EncounterHealthMeterArray)
                {
-                  if(meter.Percent != -1 && config.showPercent)
+                  if(meter.Percent != -1)
                   {
-                     pct = meter.Percent * 100;
-                     pctStr = pct == int(pct) ? pct.toFixed(0) : pct.toFixed(config.percentDecimals);
-                     meter.Name = meter.Name.split(" (")[0] + " (" + pctStr + "%)";
+                     if(config.showPercent)
+                     {
+                        pct = meter.Percent * 100;
+                        pctStr = pct == int(pct) ? pct.toFixed(0) : pct.toFixed(config.percentDecimals);
+                        meter.Name = meter.Name.split(" (")[0] + " (" + pctStr + "%)";
+                     }
+                     else if(meter.Name.indexOf("%)") != -1)
+                     {
+                        meter.Name = meter.Name.split(/ \(([0-9]*[.])?[0-9]+%\)/)[0];
+                     }
                   }
                }
             }

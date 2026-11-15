@@ -22,6 +22,7 @@ package
          var config:* = jsonObject;
          config.showPercent = Boolean(config.showPercent);
          config.percentDecimals = Parser.parsePositiveNumber(config.percentDecimals,0);
+         config.showAll = Boolean(config.showAll);
          _config = config;
          return _config;
       }
