@@ -4,6 +4,7 @@ package
    import Shared.AS3.*;
    import Shared.AS3.Data.*;
    import Shared.AS3.Events.*;
+   import com.adobe.serialization.json.*;
    import fl.motion.*;
    import flash.display.*;
    import flash.events.*;
@@ -14,6 +15,7 @@ package
    import flash.text.*;
    import flash.ui.*;
    import flash.utils.*;
+   import utils.*;
    
    public class MoreBossEncounters extends MovieClip
    {
@@ -24,6 +26,10 @@ package
       
       public static const FULL_MOD_NAME:String = MOD_NAME + " " + MOD_VERSION;
       
+      public static const CONFIG_FILE:String = "../MoreBossEncounters.json";
+      
+      public static const CONFIG_RELOAD_TIME:uint = 6200;
+      
       private static const TITLE_HUDMENU:String = "HUDMenu";
       
       private static const QUEST_ID_NEUROLOGICAL_WARFARE:uint = 7001350;
@@ -32,11 +38,17 @@ package
       
       private var topLevel:* = null;
       
+      private var configTimer:Timer;
+      
+      private var lastConfig:String;
+      
       private var EncounterHealthMeterArray:*;
       
-      private var encounterQuest:* = null;
+      private var encounterObjectives:Array = [];
       
       private var previouslyEncounterQuestActive:Boolean = false;
+      
+      private var isHostile:Boolean = true;
       
       public function MoreBossEncounters()
       {
@@ -61,6 +73,7 @@ package
                BSUIDataManager.Subscribe("QuestTrackerProvider",this.onQuestTrackerUpdate);
                this.EncounterHealthMeterArray = BSUIDataManager.GetDataFromClient("EncounterHealthMeterArray");
                this.EncounterHealthMeterArray.addEventListener(Event.CHANGE,this.onEncounterHealthMeterUpdate,false,int.MAX_VALUE);
+               this.initTimers();
             }
             else
             {
@@ -78,6 +91,64 @@ package
          removeEventListener(Event.REMOVED_FROM_STAGE,this.removedFromStageHandler);
          BSUIDataManager.Unsubscribe("QuestTrackerProvider",this.onQuestTrackerUpdate);
          this.EncounterHealthMeterArray.removeEventListener(Event.CHANGE,this.onEncounterHealthMeterUpdate);
+         if(this.configTimer)
+         {
+            this.configTimer.removeEventListener(TimerEvent.TIMER,this.loadConfig);
+         }
+      }
+      
+      public function initTimers() : void
+      {
+         this.configTimer = new Timer(CONFIG_RELOAD_TIME);
+         this.configTimer.addEventListener(TimerEvent.TIMER,this.loadConfig,false,0,true);
+         this.configTimer.start();
+      }
+      
+      public function loadConfig() : void
+      {
+         var loaderComplete:Function;
+         var ioErrorHandler:Function;
+         var url:URLRequest = null;
+         var loader:URLLoader = null;
+         try
+         {
+            loaderComplete = function(event:Event):void
+            {
+               var jsonData:Object;
+               var line:uint;
+               try
+               {
+                  if(lastConfig != loader.data)
+                  {
+                     jsonData = new JSONDecoder(loader.data,false).getValue();
+                     MoreBossEncountersConfig.init(jsonData);
+                     lastConfig = loader.data;
+                  }
+               }
+               catch(e:JSONParseError)
+               {
+                  line = e.text.substr(0,e.location).match(/\n/g).length + 1;
+                  ShowHUDMessage("Error parsing config: " + e.message + " in line " + line);
+               }
+               catch(e:Error)
+               {
+                  ShowHUDMessage("Error initializing config: " + e);
+               }
+            };
+            ioErrorHandler = function(e:IOErrorEvent):void
+            {
+               ShowHUDMessage("Error loading config: " + e.text);
+            };
+            url = new URLRequest(CONFIG_FILE);
+            loader = new URLLoader();
+            loader.load(url);
+            loader.addEventListener(Event.COMPLETE,loaderComplete,false,0,true);
+            loader.addEventListener(IOErrorEvent.IO_ERROR,ioErrorHandler,false,0,true);
+         }
+         catch(e:Error)
+         {
+            ShowHUDMessage("Error loading config: " + e);
+         }
       }
       
       public function get isReloadable() : Boolean
@@ -85,31 +156,55 @@ package
          return true;
       }
       
+      public function get config() : Object
+      {
+         return MoreBossEncountersConfig.get();
+      }
+      
       private function onQuestTrackerUpdate(event:FromClientDataEvent) : void
       {
-         var i:int;
-         var quests:Array;
+         var progressObjectives:Array;
          var hasEncounterQuest:Boolean;
+         var quest:*;
          try
          {
+            if(config == null)
+            {
+               return;
+            }
+            hasEncounterQuest = false;
             if(event.data && event.data.quests && event.data.quests.length)
             {
-               quests = event.data.quests;
-               hasEncounterQuest = false;
-               i = 0;
-               while(i < quests.length)
+               for each(quest in event.data.quests)
                {
-                  if(quests[i].questId == QUEST_ID_A_COLOSSAL_PROBLEM || quests[i].questId == QUEST_ID_NEUROLOGICAL_WARFARE)
+                  if(quest.questId == QUEST_ID_A_COLOSSAL_PROBLEM || quest.questId == QUEST_ID_NEUROLOGICAL_WARFARE)
                   {
-                     this.encounterQuest = GlobalFunc.CloneObject(quests[i]);
-                     hasEncounterQuest = true;
+                     this.isHostile = true;
+                     progressObjectives = quest.objectives.filter(function(obj:*):Boolean
+                     {
+                        return obj.progress != -1;
+                     });
                   }
-                  i++;
+                  else if(config.showAll)
+                  {
+                     this.isHostile = false;
+                     progressObjectives = quest.objectives.filter(function(obj:*):Boolean
+                     {
+                        return obj.progress != -1;
+                     });
+                  }
+                  if(progressObjectives.length)
+                  {
+                     this.encounterObjectives = GlobalFunc.CloneObject(progressObjectives);
+                     hasEncounterQuest = true;
+                     break;
+                  }
                }
-               if(!hasEncounterQuest)
-               {
-                  this.encounterQuest = null;
-               }
+            }
+            if(!hasEncounterQuest)
+            {
+               this.encounterObjectives = [];
+               this.isHostile = true;
             }
          }
          catch(e:*)
@@ -123,25 +218,36 @@ package
          var i:int;
          var meter:*;
          var objectives:Array;
+         var pct:Number;
+         var pctStr:String;
          try
          {
-            if(this.encounterQuest != null)
+            if(config == null)
+            {
+               return;
+            }
+            if(this.encounterObjectives.length)
             {
                this.previouslyEncounterQuestActive = true;
-               objectives = encounterQuest.objectives.filter(function(obj:*):Boolean
-               {
-                  return obj.progress != -1;
-               });
                for(i in event.data.EncounterHealthMeterArray)
                {
                   meter = event.data.EncounterHealthMeterArray[i];
-                  if(objectives.length > i)
+                  if(this.encounterObjectives.length > i)
                   {
-                     meter.Name = objectives[i].title;
-                     meter.Percent = objectives[i].progress;
-                     meter.EncounterIconType = 1;
-                     meter.EncounterIconLevel = 2;
-                     meter.IsHostile = true;
+                     if(config.showPercent)
+                     {
+                        pct = this.encounterObjectives[i].progress * 100;
+                        pctStr = pct == int(pct) ? pct.toFixed(0) : pct.toFixed(config.percentDecimals);
+                        meter.Name = this.encounterObjectives[i].title + " (" + pctStr + "%)";
+                     }
+                     else
+                     {
+                        meter.Name = this.encounterObjectives[i].title;
+                     }
+                     meter.Percent = this.encounterObjectives[i].progress;
+                     meter.EncounterIconType = this.isHostile ? 1 : 0;
+                     meter.EncounterIconLevel = this.isHostile ? 2 : 0;
+                     meter.IsHostile = this.isHostile;
                   }
                   else
                   {
@@ -149,6 +255,7 @@ package
                      meter.Percent = -1;
                      meter.EncounterIconType = 0;
                      meter.EncounterIconLevel = 0;
+                     meter.IsHostile = true;
                   }
                }
             }
@@ -161,6 +268,19 @@ package
                   meter.Percent = -1;
                   meter.EncounterIconType = 0;
                   meter.EncounterIconLevel = 0;
+                  meter.IsHostile = true;
+               }
+            }
+            else
+            {
+               for each(meter in event.data.EncounterHealthMeterArray)
+               {
+                  if(meter.Percent != -1 && config.showPercent)
+                  {
+                     pct = meter.Percent * 100;
+                     pctStr = pct == int(pct) ? pct.toFixed(0) : pct.toFixed(config.percentDecimals);
+                     meter.Name = meter.Name.split(" (")[0] + " (" + pctStr + "%)";
+                  }
                }
             }
          }
