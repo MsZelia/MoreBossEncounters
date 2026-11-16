@@ -169,6 +169,8 @@ package
       {
          var hasEncounterQuest:Boolean;
          var quest:*;
+         var cfgQuest:Object;
+         var questIdHex:String;
          var progressObjectives:Array = [];
          try
          {
@@ -181,9 +183,18 @@ package
             {
                for each(quest in event.data.quests)
                {
+                  questIdHex = ("0000" + quest.questId.toString(16).toUpperCase()).substr(-8,8);
                   if(quest.questId == QUEST_ID_A_COLOSSAL_PROBLEM || quest.questId == QUEST_ID_NEUROLOGICAL_WARFARE)
                   {
                      this.isHostile = true;
+                     progressObjectives = quest.objectives.filter(function(obj:*):Boolean
+                     {
+                        return obj.progress != -1;
+                     });
+                  }
+                  else if((cfgQuest = config.showQuests[questIdHex]) != null)
+                  {
+                     this.isHostile = cfgQuest.isHostile;
                      progressObjectives = quest.objectives.filter(function(obj:*):Boolean
                      {
                         return obj.progress != -1;
