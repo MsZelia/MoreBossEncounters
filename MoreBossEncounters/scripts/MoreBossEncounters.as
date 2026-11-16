@@ -200,7 +200,7 @@ package
                         return obj.progress != -1;
                      });
                   }
-                  else if(config.showAll)
+                  else if(config.showAll && config.hideQuests.indexOf(questIdHex) == -1)
                   {
                      this.isHostile = false;
                      progressObjectives = quest.objectives.filter(function(obj:*):Boolean
