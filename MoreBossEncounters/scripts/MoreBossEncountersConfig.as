@@ -1,5 +1,6 @@
 package
 {
+   import Shared.GlobalFunc;
    import utils.Parser;
    
    public class MoreBossEncountersConfig
@@ -43,8 +44,19 @@ package
          for each(var q in config.showQuests)
          {
             q.isHostile = Boolean(q.isHostile);
-            q.icon = Math.min(Math.max(Parser.parseNumber(q.icon,0),0),2);
-            q.level = Math.min(Math.max(Parser.parseNumber(q.level,0),0),3);
+            q.icon = GlobalFunc.Clamp(Parser.parseNumber(q.icon,0),0,2);
+            if(q.icon == 0)
+            {
+               q.level = 0;
+            }
+            else
+            {
+               q.level = GlobalFunc.Clamp(Parser.parseNumber(q.level,0),0,3);
+            }
+            if(q.level == 0)
+            {
+               q.icon = 0;
+            }
          }
          _config = config;
          return _config;
