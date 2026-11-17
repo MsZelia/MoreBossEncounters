@@ -46,6 +46,8 @@ package
       
       private var previouslyEncounterQuestActive:Boolean = false;
       
+      private var debugQuestId:String = "";
+      
       private var isHostile:Boolean = true;
       
       private var icon:int = 0;
@@ -179,6 +181,7 @@ package
                return;
             }
             hasEncounterQuest = false;
+            this.debugQuestId = "";
             if(event.data && event.data.quests && event.data.quests.length)
             {
                for each(quest in event.data.quests)
@@ -199,6 +202,10 @@ package
                      this.isHostile = false;
                      this.icon = 0;
                      this.level = 0;
+                     if(config.debug)
+                     {
+                        this.debugQuestId = questIdHex;
+                     }
                      progressObjectives = quest.objectives.filter(function(obj:*):Boolean
                      {
                         return obj.progress != -1;
@@ -251,11 +258,11 @@ package
                      {
                         pct = this.encounterObjectives[i].progress * 100;
                         pctStr = pct == int(pct) ? pct.toFixed(0) : pct.toFixed(config.percentDecimals);
-                        meter.Name = this.encounterObjectives[i].title + " (" + pctStr + "%)";
+                        meter.Name = (this.debugQuestId.length ? "[" + this.debugQuestId + "] " : "") + this.encounterObjectives[i].title + " (" + pctStr + "%)";
                      }
                      else
                      {
-                        meter.Name = this.encounterObjectives[i].title;
+                        meter.Name = (this.debugQuestId.length ? "[" + this.debugQuestId + "] " : "") + this.encounterObjectives[i].title;
                      }
                      meter.Percent = this.encounterObjectives[i].progress;
                      meter.EncounterIconType = this.icon;

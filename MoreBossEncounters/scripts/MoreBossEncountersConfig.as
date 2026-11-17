@@ -31,12 +31,12 @@ package
          config.showQuests = config.showQuests != null ? config.showQuests : {
             "006AD506":{
                "isHostile":true,
-               "icon":2,
+               "icon":1,
                "level":3
             },
             "00583D14":{
                "isHostile":true,
-               "icon":2,
+               "icon":1,
                "level":3
             }
          };
