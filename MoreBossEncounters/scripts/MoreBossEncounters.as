@@ -271,10 +271,7 @@ package
                   }
                   else
                   {
-                     meter.Name = "";
                      meter.Percent = -1;
-                     meter.EncounterIconType = 0;
-                     meter.EncounterIconLevel = 0;
                      meter.IsHostile = true;
                   }
                }
@@ -284,10 +281,7 @@ package
                this.previouslyEncounterQuestActive = false;
                for each(meter in event.data.EncounterHealthMeterArray)
                {
-                  meter.Name = "";
                   meter.Percent = -1;
-                  meter.EncounterIconType = 0;
-                  meter.EncounterIconLevel = 0;
                   meter.IsHostile = true;
                }
             }
