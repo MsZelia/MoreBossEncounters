@@ -32,10 +32,6 @@ package
       
       private static const TITLE_HUDMENU:String = "HUDMenu";
       
-      private static const QUEST_ID_NEUROLOGICAL_WARFARE:uint = 7001350;
-      
-      private static const QUEST_ID_A_COLOSSAL_PROBLEM:uint = 5782804;
-      
       private var topLevel:* = null;
       
       private var configTimer:Timer;
@@ -51,6 +47,10 @@ package
       private var previouslyEncounterQuestActive:Boolean = false;
       
       private var isHostile:Boolean = true;
+      
+      private var icon:int = 0;
+      
+      private var level:int = 0;
       
       public function MoreBossEncounters()
       {
@@ -184,17 +184,11 @@ package
                for each(quest in event.data.quests)
                {
                   questIdHex = ("0000" + quest.questId.toString(16).toUpperCase()).substr(-8,8);
-                  if(quest.questId == QUEST_ID_A_COLOSSAL_PROBLEM || quest.questId == QUEST_ID_NEUROLOGICAL_WARFARE)
-                  {
-                     this.isHostile = true;
-                     progressObjectives = quest.objectives.filter(function(obj:*):Boolean
-                     {
-                        return obj.progress != -1;
-                     });
-                  }
-                  else if((cfgQuest = config.showQuests[questIdHex]) != null)
+                  if((cfgQuest = config.showQuests[questIdHex]) != null)
                   {
                      this.isHostile = cfgQuest.isHostile;
+                     this.icon = cfgQuest.icon;
+                     this.level = cfgQuest.level;
                      progressObjectives = quest.objectives.filter(function(obj:*):Boolean
                      {
                         return obj.progress != -1;
@@ -203,6 +197,8 @@ package
                   else if(config.showAll && config.hideQuests.indexOf(questIdHex) == -1)
                   {
                      this.isHostile = false;
+                     this.icon = 0;
+                     this.level = 0;
                      progressObjectives = quest.objectives.filter(function(obj:*):Boolean
                      {
                         return obj.progress != -1;
@@ -220,6 +216,8 @@ package
             {
                this.encounterObjectives = [];
                this.isHostile = true;
+               this.icon = 0;
+               this.level = 0;
             }
          }
          catch(e:*)
@@ -260,8 +258,8 @@ package
                         meter.Name = this.encounterObjectives[i].title;
                      }
                      meter.Percent = this.encounterObjectives[i].progress;
-                     meter.EncounterIconType = this.isHostile ? 1 : 0;
-                     meter.EncounterIconLevel = this.isHostile ? 2 : 0;
+                     meter.EncounterIconType = this.icon;
+                     meter.EncounterIconLevel = this.level;
                      meter.IsHostile = this.isHostile;
                   }
                   else

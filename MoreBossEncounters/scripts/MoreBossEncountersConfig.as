@@ -28,10 +28,23 @@ package
          {
             config.hideQuests[i] = config.hideQuests[i].toUpperCase();
          }
-         config.showQuests = config.showQuests != null ? config.showQuests : {};
+         config.showQuests = config.showQuests != null ? config.showQuests : {
+            "006AD506":{
+               "isHostile":true,
+               "icon":2,
+               "level":3
+            },
+            "00583D14":{
+               "isHostile":true,
+               "icon":2,
+               "level":3
+            }
+         };
          for each(var q in config.showQuests)
          {
             q.isHostile = Boolean(q.isHostile);
+            q.icon = Math.min(Math.max(Parser.parseNumber(q.icon,0),0),2);
+            q.level = Math.min(Math.max(Parser.parseNumber(q.level,0),0),3);
          }
          _config = config;
          return _config;
