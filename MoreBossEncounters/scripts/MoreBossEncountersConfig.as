@@ -21,9 +21,9 @@ package
       public static function init(jsonObject:*) : Object
       {
          var config:* = jsonObject;
-         config.showPercent = Boolean(config.showPercent);
+         config.showPercent = Parser.parseBoolean(config.showPercent,true);
          config.percentDecimals = Parser.parsePositiveNumber(config.percentDecimals,0);
-         config.showAll = Boolean(config.showAll);
+         config.showAll = Parser.parseBoolean(config.showAll,false);
          config.hideQuests = config.hideQuests != null && config.hideQuests is Array ? config.hideQuests : [];
          for(var i in config.hideQuests)
          {

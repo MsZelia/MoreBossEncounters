@@ -144,6 +144,7 @@ package
             ioErrorHandler = function(e:IOErrorEvent):void
             {
                ShowHUDMessage("Error loading config: " + e.text);
+               MoreBossEncountersConfig.init({});
             };
             url = new URLRequest(CONFIG_FILE);
             loader = new URLLoader();
