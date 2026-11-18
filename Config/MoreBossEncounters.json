@@ -1,0 +1,31 @@
+{
+	// show encounter percentage value
+	"showPercent": true,
+	"percentDecimals": 2,
+	
+	// form IDs for can be found here:
+	//  public events: https://fallout.fandom.com/wiki/Fallout_76_public_events
+	//  activities: https://fallout.fandom.com/wiki/Fallout_76_activities
+	//  quests: https://fallout.fandom.com/wiki/Fallout_76_quests
+	
+	// show encounter bars for these quests/events
+	"showQuests": {
+		"00583D14" : {"isHostile": true, "icon": 1, "level": 3}, // A Colossal Problem
+		"006AD506" : {"isHostile": true, "icon": 1, "level": 3}, // Neurological Warfare
+		"0079AA0F" : {"isHostile": true, "icon": 1, "level": 3}, // The Big Bloom
+		"00865FA8" : {"isHostile": false}, // Infestation - clear mobs
+		"0077FA14" : {"isHostile": false}, // Mischief Night
+		"006173A1" : {"isHostile": false}, // Mothman Equinox
+	},
+	
+	// show encounter bars for all quests/events with progress bar
+	"showAll": false,
+	// debug will show form IDs with "showAll":true
+	"debug": false,
+	// exclude quests/events from being shown with "showAll":true
+	"hideQuests": [
+		// Examples:
+		//"004648C3", // Campfire Tales
+		//"0009210E", // Feed the People
+	],
+}
